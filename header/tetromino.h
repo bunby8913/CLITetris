@@ -28,6 +28,10 @@ public:
   std::vector<std::vector<bool>> GetTetrisMatrix() const {
     return tetrisPattern;
   };
+  TetrisColorEnum GetTetrisColor() const { return tetrisColor; };
+
+  int GetRightEdge() const { return rightMatrixEdge; };
+  int GetTopEdge() const { return topMatrixEdge; };
 
 private:
   // Store the location of the tetris
@@ -38,5 +42,10 @@ private:
   TetrisColorEnum tetrisColor;
   // Pattern should always be contained in a 4 by 4 matrix
   std::vector<std::vector<bool>> tetrisPattern{4, std::vector<bool>(4)};
+
+  // Indicate the tetromino covers this many blocks to the right
+  int rightMatrixEdge;
+  // Indicate the tetromino covers this many blocks from the bottom
+  int topMatrixEdge;
 };
 #endif // !TETROMINO_H

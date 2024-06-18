@@ -44,7 +44,12 @@ void InitializationHelper::EnableRawMode() {
   int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
   fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 }
+void InitializationHelper::ResetScreen() {
 
+#if defined(__linux__) || defined(__gnu_linux__) || defined(__LINUX__)
+  system("clear");
+#endif
+}
 void InitializationHelper::ClearScreen() {
 
 #if defined(__linux__) || defined(__gnu_linux__) || defined(__LINUX__)

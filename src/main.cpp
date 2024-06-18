@@ -5,6 +5,7 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
+#include <utility>
 
 int main(int argc, char *argv[]) {
   std::unique_ptr<InitializationHelper> InitHelper =
@@ -14,38 +15,43 @@ int main(int argc, char *argv[]) {
   char character;
   int characterAscii;
   auto lastTime = std::chrono::steady_clock::now();
-  auto tickDuration = std::chrono::milliseconds(1000 / 30);
+  auto tickDuration = std::chrono::milliseconds(1000 / 60);
+  // currently used as a counter, every frame the position of the block should
+  // be updated
+  int BASELINE = 15;
+  int currentBaseline = 0;
 
-#if defined(__linux__) || defined(__gnu_linux__) || defined(__LINUX__)
-  system("clear");
-#endif
-
+  InitHelper->ResetScreen();
   // Hide cursor
   std::cout << "\x1b[?25l";
   // read a single byte to character, return 0 if end of file + -1 for error
+  tetrisBoard->SpawnTetromino(TetrisTypeEnum::J, TetrisColorEnum::Blue,
+                              std::pair<int, int>{20, 5});
   while (true) {
     if (read(STDIN_FILENO, &character, 1) == 1) {
       if (character == 'q') {
         break;
       } else {
         characterAscii = character;
-        std::cout << characterAscii << std::endl;
+        tetrisBoard->ProcessPlayerInput(characterAscii);
+        // 68 is left, 67 is right
       }
     }
     auto currentTime = std::chrono::steady_clock::now();
     if (currentTime - lastTime >= tickDuration) {
       lastTime = currentTime;
+      ++currentBaseline;
+      if (currentBaseline == BASELINE) {
+        tetrisBoard->UpdateBoard();
+        currentBaseline = 0;
+      }
       InitHelper->ClearScreen();
-      tetrisBoard->AddTetrominoToBoard(TetrisTypeEnum::J,
-                                       TetrisColorEnum::Blue);
       tetrisBoard->drawBoard();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-#if defined(__linux__) || defined(__gnu_linux__) || defined(__LINUX__)
-  system("clear");
+  InitHelper->ResetScreen();
   // Show cursor
   std::cout << "\x1b[?25h";
-#endif
   return 0;
 }

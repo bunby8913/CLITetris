@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <vector>
 
 TetrisBoard::TetrisBoard()
     : board(ROW_SIZE, std::vector<std::pair<bool, TetrisColorEnum>>(
@@ -26,6 +27,7 @@ void TetrisBoard::InitializeBoarder() {
 void TetrisBoard::drawBoard() {
   // Only the visible rows should be drawn
   for (int i = DRAW_LIMIT; i < board.size(); ++i) {
+    // This draws a margin from the left side of the CLI
     std::cout << "      ";
     for (int j = 0; j < board[0].size(); ++j) {
       if (board[i][j].first == true) {
@@ -36,24 +38,111 @@ void TetrisBoard::drawBoard() {
     }
     std::cout << std::endl;
   }
-  std::cout << GetColorString(Reset);
+  std::cout << GetColorString(TetrisColorEnum::Reset);
 }
 
-void TetrisBoard::AddTetrominoToBoard(TetrisTypeEnum type,
-                                      TetrisColorEnum color,
-                                      std::pair<int, int> defaultLocation) {
+void TetrisBoard::UpdateBoard() {
+  if (currentTetromino) {
+
+    std::vector<std::vector<bool>> currentMatrix =
+        currentTetromino->GetTetrisMatrix();
+    for (int i = 0; i < currentMatrix[0].size(); ++i) {
+      // if that bottom grid is occupied
+      if (currentMatrix[3][i]) {
+        // here we will perform check on the board to determine if tetromino can
+        // go down further
+      }
+    }
+    std::pair<int, int> matrixLocation = currentTetromino->GetTetrisLocation();
+    if (matrixLocation.first + 4 < (ROW_SIZE - 1)) {
+      EraseTetrominoOnBoard();
+      matrixLocation.first += 1;
+      currentTetromino->SetTetrisLocation(matrixLocation);
+      DrawTetrominoOnBoard();
+    } else {
+      LockCurrentTetromino();
+    }
+  }
+}
+
+void TetrisBoard::SpawnTetromino(TetrisTypeEnum type, TetrisColorEnum color,
+                                 std::pair<int, int> defaultLocation) {
   currentTetromino = std::make_unique<Tetromino>(type, color);
   currentTetromino->SetTetrisLocation(defaultLocation);
+  DrawTetrominoOnBoard();
+}
+
+void TetrisBoard::DrawTetrominoOnBoard() {
+  std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
   std::vector<std::vector<bool>> tetrominoMatrix =
       currentTetromino->GetTetrisMatrix();
   for (int i = 0; i < tetrominoMatrix.size(); ++i) {
     for (int j = 0; j < tetrominoMatrix[0].size(); ++j) {
       if (tetrominoMatrix[i][j]) {
-        int row = defaultLocation.first + i;
-        int column = defaultLocation.second + j;
+        int row = currentLocation.first + i;
+        int column = currentLocation.second + j;
         board[row][column].first = true;
-        board[row][column].second = color;
+        board[row][column].second = currentTetromino->GetTetrisColor();
       }
     }
   }
 }
+
+void TetrisBoard::EraseTetrominoOnBoard() {
+  if (currentTetromino) {
+
+    std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
+    std::vector<std::vector<bool>> tetrominoMatrix =
+        currentTetromino->GetTetrisMatrix();
+    for (int i = 0; i < tetrominoMatrix.size(); ++i) {
+      for (int j = 0; j < tetrominoMatrix[0].size(); ++j) {
+        if (tetrominoMatrix[i][j]) {
+          int row = currentLocation.first + i;
+          int column = currentLocation.second + j;
+          board[row][column].first = false;
+          board[row][column].second = TetrisColorEnum::Reset;
+        }
+      }
+    }
+  }
+}
+
+void TetrisBoard::ProcessPlayerInput(int characterAscii) {
+  // left input
+  if (characterAscii == 68) {
+    std::cout << characterAscii << std::endl;
+    MoveTetrominoLeft();
+  }
+  // right input
+  else if (characterAscii == 67) {
+    std::cout << characterAscii << std::endl;
+    MoveTetrominoRight();
+  }
+}
+
+void TetrisBoard::MoveTetrominoLeft() {
+  if (currentTetromino) {
+    std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
+    if (currentLocation.second > 1) {
+      EraseTetrominoOnBoard();
+      --currentLocation.second;
+      currentTetromino->SetTetrisLocation(currentLocation);
+      DrawTetrominoOnBoard();
+    }
+  }
+}
+
+void TetrisBoard::MoveTetrominoRight() {
+  if (currentTetromino) {
+    std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
+    if (currentLocation.second + currentTetromino->GetRightEdge() <
+        COLUMN_SIZE - 2) {
+      EraseTetrominoOnBoard();
+      ++currentLocation.second;
+      currentTetromino->SetTetrisLocation(currentLocation);
+      DrawTetrominoOnBoard();
+    }
+  }
+}
+
+void TetrisBoard::LockCurrentTetromino() { currentTetromino = nullptr; }

@@ -22,42 +22,56 @@ void Tetromino::GeneratePattern(TetrisTypeEnum type) {
     pattern[3][1] = true;
     pattern[3][2] = true;
     pattern[3][3] = true;
+    topMatrixEdge = 3;
+    rightMatrixEdge = 3;
     break;
   case J:
     pattern[2][0] = true;
     pattern[3][0] = true;
     pattern[3][1] = true;
     pattern[3][2] = true;
+    topMatrixEdge = 2;
+    rightMatrixEdge = 2;
     break;
   case L:
     pattern[2][2] = true;
     pattern[3][0] = true;
     pattern[3][1] = true;
     pattern[3][2] = true;
+    topMatrixEdge = 2;
+    rightMatrixEdge = 2;
     break;
   case O:
     pattern[2][0] = true;
     pattern[3][0] = true;
     pattern[2][1] = true;
     pattern[3][1] = true;
+    topMatrixEdge = 2;
+    rightMatrixEdge = 1;
     break;
   case S:
     pattern[3][0] = true;
     pattern[3][1] = true;
     pattern[2][1] = true;
     pattern[2][2] = true;
+    topMatrixEdge = 2;
+    rightMatrixEdge = 2;
     break;
   case T:
     pattern[3][0] = true;
     pattern[3][1] = true;
     pattern[3][2] = true;
     pattern[2][1] = true;
+    topMatrixEdge = 2;
+    rightMatrixEdge = 2;
     break;
   case Z:
     pattern[2][0] = true;
     pattern[2][1] = true;
     pattern[3][1] = true;
     pattern[3][2] = true;
+    topMatrixEdge = 2;
+    rightMatrixEdge = 2;
     break;
   default:
     break;

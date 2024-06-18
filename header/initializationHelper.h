@@ -12,6 +12,9 @@ public:
 
   void EnableRawMode();
 
+  // Used at beginning and end to clear screen
+  void ResetScreen();
+  // Used every frame to refresh screen without flickering
   void ClearScreen();
 
   std::pair<int, int> GetWindowsSize();
