@@ -75,7 +75,7 @@ void TetrisBoard::UpdateBoard() {
 }
 
 void TetrisBoard::SpawnTetromino() {
-  std::pair<int, int> spawnLocation = {20, 5};
+  std::pair<int, int> spawnLocation = {18, 5};
 
   // When the game first starts
   if (!currentTetromino) {
@@ -137,13 +137,27 @@ void TetrisBoard::EraseTetrominoOnBoard() {
 void TetrisBoard::ProcessPlayerInput(int characterAscii) {
   // left input
   if (characterAscii == 68) {
-    std::cout << characterAscii << std::endl;
     MoveTetrominoLeft();
   }
   // right input
   else if (characterAscii == 67) {
-    std::cout << characterAscii << std::endl;
     MoveTetrominoRight();
+  }
+  // 122 to rotate left
+  else if (characterAscii == 122) {
+    EraseTetrominoOnBoard();
+    currentTetromino->RotatePatternLeft();
+    DrawTetrominoOnBoard();
+    // c to rotate right
+  } else if (characterAscii == 99) {
+    EraseTetrominoOnBoard();
+    currentTetromino->RotatePatternRight();
+    DrawTetrominoOnBoard();
+
+  }
+  // 99 is c
+  else {
+    // std::cout << characterAscii << std::endl;
   }
 }
 
@@ -151,6 +165,22 @@ void TetrisBoard::MoveTetrominoLeft() {
   if (currentTetromino) {
     std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
     if (currentLocation.second > 1) {
+      // Figure out there are anything blocking the tetromine from moving left
+      // for each row, find the leftest element, see if there are anything on
+      // the left of them
+      auto tetrominoMatrix = currentTetromino->GetTetrisMatrix();
+      for (int i = 0; i < tetrominoMatrix.size(); ++i) {
+        for (int j = 0; j < tetrominoMatrix[0].size(); ++j) {
+          if (tetrominoMatrix[i][j]) {
+            int row = currentLocation.first + i;
+            int column = std::max(0, currentLocation.second + j - 1);
+            if (board[row][column].first) {
+              return;
+            }
+            break;
+          }
+        }
+      }
       EraseTetrominoOnBoard();
       --currentLocation.second;
       currentTetromino->SetTetrisLocation(currentLocation);
@@ -162,8 +192,23 @@ void TetrisBoard::MoveTetrominoLeft() {
 void TetrisBoard::MoveTetrominoRight() {
   if (currentTetromino) {
     std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
-    if (currentLocation.second + currentTetromino->GetRightEdge() <
-        COLUMN_SIZE - 2) {
+    if (currentLocation.second < COLUMN_SIZE - 2) {
+      // Figure out if there are anything blocking from the right
+      // for each row, find the leftest element, see if there are anything on
+      // the left of them
+      auto tetrominoMatrix = currentTetromino->GetTetrisMatrix();
+      for (int i = 0; i < tetrominoMatrix.size(); ++i) {
+        for (int j = tetrominoMatrix[0].size() - 1; j >= 0; --j) {
+          if (tetrominoMatrix[i][j]) {
+            int row = currentLocation.first + i;
+            int column = currentLocation.second + j + 1;
+            if (board[row][column].first) {
+              return;
+            }
+            break;
+          }
+        }
+      }
       EraseTetrominoOnBoard();
       ++currentLocation.second;
       currentTetromino->SetTetrisLocation(currentLocation);
@@ -172,7 +217,42 @@ void TetrisBoard::MoveTetrominoRight() {
   }
 }
 
+int TetrisBoard::CheckForCompletedLines() {
+  int completedLine = 0;
+  for (int i = ROW_SIZE - 2; i > DRAW_LIMIT; --i) {
+    for (int j = 0; j < board[0].size(); ++j) {
+      if (!board[i][j].first) {
+        return completedLine;
+      }
+    }
+    ++completedLine;
+  }
+  return completedLine;
+}
+
+void TetrisBoard::RemoveCompletedLines(int lines) {
+  // Start from the bottom of the board and move upwards
+  for (int i = ROW_SIZE - 2; i >= lines; --i) {
+    for (int j = 0; j < board[0].size(); ++j) {
+      // Move the line `lines` rows up
+      board[i][j] = board[i - lines][j];
+    }
+  }
+
+  // Clear the top `lines` rows
+  for (int i = lines - 1; i >= 0; --i) {
+    for (int j = 0; j < board[0].size(); ++j) {
+      board[i][j].first = false;
+      board[i][j].second = TetrisColorEnum::Reset;
+    }
+  }
+}
+
 void TetrisBoard::LockCurrentTetromino() {
   currentTetromino = nullptr;
+  int linesToErase = CheckForCompletedLines();
+  if (linesToErase > 0) {
+    RemoveCompletedLines(linesToErase);
+  }
   SpawnTetromino();
 }

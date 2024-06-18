@@ -1,5 +1,6 @@
 #include "../header/tetromino.h"
-#include <string>
+#include <iostream>
+#include <random>
 #include <vector>
 Tetromino::Tetromino()
     : tetrisLocation(0, 0), tetrisRotation(TetrisRotationEnum::Up),
@@ -90,19 +91,99 @@ void Tetromino::GeneratePattern(TetrisTypeEnum type) {
 }
 
 void Tetromino::RotatePatternRight() {
-  std::vector<std::vector<std::string>> newPattern;
   tetrisRotationIndex = (tetrisRotationIndex + 1) % 4;
   tetrisRotation = static_cast<TetrisRotationEnum>(tetrisRotationIndex);
+  std::vector<std::vector<bool>> tempPattern{4, std::vector<bool>(4)};
+  int tempPatternColumn = 0;
+  for (int i = tetrisPattern.size() - 1; i >= 0; --i) {
+    for (int j = 0; j < tetrisPattern[0].size(); ++j) {
+      tempPattern[j][(tetrisPattern.size() - 1) - i] = tetrisPattern[i][j];
+    }
+    ++tempPatternColumn;
+  }
+  LeftAlignPattern(tempPattern);
+  BottomAlignPattern(tempPattern);
+  tetrisPattern = tempPattern;
 }
 
 void Tetromino::RotatePatternLeft() {
-  std::vector<std::vector<std::string>> newPattern;
   tetrisRotationIndex = (tetrisRotationIndex + 1) % 4;
   tetrisRotation = static_cast<TetrisRotationEnum>(tetrisRotationIndex);
+  std::vector<std::vector<bool>> tempPattern{4, std::vector<bool>(4)};
+  int tempPatternColumn = 0;
+  for (int i = 0; i < tetrisPattern.size(); ++i) {
+    for (int j = 0; j < tetrisPattern[0].size(); ++j) {
+      tempPattern[(tetrisPattern.size() - 1) - j][tempPatternColumn] =
+          tetrisPattern[i][j];
+    }
+    ++tempPatternColumn;
+  }
+  LeftAlignPattern(tempPattern);
+  BottomAlignPattern(tempPattern);
+  tetrisPattern = tempPattern;
+}
+
+void Tetromino::LeftAlignPattern(std::vector<std::vector<bool>> &pattern) {
+  bool aligned = false;
+  while (!aligned) {
+
+    for (int i = 0; i < pattern.size(); ++i) {
+      aligned = aligned || pattern[i][0];
+    }
+    if (!aligned) {
+      LeftAlignByOne(pattern);
+    }
+  }
+}
+
+void Tetromino::LeftAlignByOne(std::vector<std::vector<bool>> &pattern) {
+  std::vector<std::vector<bool>> tempPattern{4, std::vector<bool>(4)};
+  for (int i = 0; i < pattern.size(); ++i) {
+    for (int j = 0; j < pattern[0].size(); ++j) {
+      if (pattern[i][j]) {
+        if (j > 0)
+          tempPattern[i][j - 1] = pattern[i][j];
+      }
+    }
+  }
+  pattern = tempPattern;
+}
+
+void Tetromino::BottomAlignPattern(std::vector<std::vector<bool>> &pattern) {
+
+  bool aligned = false;
+  while (!aligned) {
+
+    for (int i = 0; i < pattern[0].size(); ++i) {
+      aligned = aligned || pattern[pattern.size() - 1][i];
+    }
+    if (!aligned) {
+      BottomAlignByOne(pattern);
+    }
+  }
+}
+
+void Tetromino::BottomAlignByOne(std::vector<std::vector<bool>> &pattern) {
+  std::vector<std::vector<bool>> tempPattern{4, std::vector<bool>(4)};
+  for (int i = 0; i < pattern.size(); ++i) {
+    for (int j = 0; j < pattern[0].size(); ++j) {
+      if (pattern[i][j]) {
+        if (i < pattern.size() - 1)
+          tempPattern[i + 1][j] = pattern[i][j];
+      }
+    }
+  }
+  pattern = tempPattern;
 }
 
 TetrisTypeEnum Tetromino::GetNextType() {
-  return static_cast<TetrisTypeEnum>(rand() % (TetrisTypeEnum::Z + 1));
+  // Use the random library to produce random number
+  std::default_random_engine generator(std::random_device{}());
+  std::uniform_int_distribution<int> distribution(0, TetrisTypeEnum::Z);
+  int random = distribution(generator);
+  std::cout << random << std::endl;
+
+  return static_cast<TetrisTypeEnum>(random);
 }
 
 TetrisColorEnum Tetromino::GetColorBaseOnType(TetrisTypeEnum tetrisType) {

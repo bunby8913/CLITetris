@@ -21,6 +21,13 @@ public:
 
   void RotatePatternRight();
   void RotatePatternLeft();
+  // Once rotated, make sure the new pattern is still at the left + bottom
+  // corner of the matrix
+  void LeftAlignPattern(std::vector<std::vector<bool>> &pattern);
+  void LeftAlignByOne(std::vector<std::vector<bool>> &pattern);
+  void BottomAlignPattern(std::vector<std::vector<bool>> &pattern);
+  void BottomAlignByOne(std::vector<std::vector<bool>> &pattern);
+
   std::pair<int, int> GetTetrisLocation() const { return tetrisLocation; };
   void SetTetrisLocation(std::pair<int, int> location) {
     tetrisLocation = location;

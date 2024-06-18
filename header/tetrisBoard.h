@@ -32,9 +32,14 @@ public:
   // We should also check if we can remove lines here
   void LockCurrentTetromino();
 
+  int CheckForCompletedLines();
+
+  void RemoveCompletedLines(int lines);
+
 private:
   std::vector<std::vector<std::pair<bool, TetrisColorEnum>>> board;
   int currentLevel;
   std::unique_ptr<Tetromino> currentTetromino = nullptr;
   std::unique_ptr<Tetromino> nextTetromino = nullptr;
+  std::unique_ptr<Tetromino> holdTetromino = nullptr;
 };

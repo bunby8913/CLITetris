@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
   auto lastTime = std::chrono::steady_clock::now();
   auto tickDuration = std::chrono::milliseconds(1000 / 60);
   // Use a counter to determine how many frames before the block moves down by 1
-  int BASELINE = 15;
+  int BASELINE = 20;
   int currentBaseline = 0;
 
   InitHelper->ResetScreen();
