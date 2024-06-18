@@ -26,7 +26,7 @@ InitializationHelper::~InitializationHelper() {
 }
 
 void InitializationHelper::DisableRawMode() {
-  //
+  // Restore the default terminal mode saved earlier
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &originalTermios);
 }
 
