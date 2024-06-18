@@ -5,7 +5,6 @@
 #include <memory>
 #include <thread>
 #include <unistd.h>
-#include <utility>
 
 int main(int argc, char *argv[]) {
   std::unique_ptr<InitializationHelper> InitHelper =
@@ -16,18 +15,16 @@ int main(int argc, char *argv[]) {
   int characterAscii;
   auto lastTime = std::chrono::steady_clock::now();
   auto tickDuration = std::chrono::milliseconds(1000 / 60);
-  // currently used as a counter, every frame the position of the block should
-  // be updated
+  // Use a counter to determine how many frames before the block moves down by 1
   int BASELINE = 15;
   int currentBaseline = 0;
 
   InitHelper->ResetScreen();
   // Hide cursor
   std::cout << "\x1b[?25l";
-  // read a single byte to character, return 0 if end of file + -1 for error
-  tetrisBoard->SpawnTetromino(TetrisTypeEnum::J, TetrisColorEnum::Blue,
-                              std::pair<int, int>{20, 5});
+  tetrisBoard->SpawnTetromino();
   while (true) {
+    // read a single byte to character, return 0 if end of file + -1 for error
     if (read(STDIN_FILENO, &character, 1) == 1) {
       if (character == 'q') {
         break;

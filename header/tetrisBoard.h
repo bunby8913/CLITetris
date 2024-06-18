@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-const int DRAW_LIMIT = 22;
+const int DRAW_LIMIT = 20;
 const int ROW_SIZE = 42;
 const int COLUMN_SIZE = 12;
 
@@ -19,8 +19,7 @@ public:
   void UpdateBoard();
 
   // Create a tetromino of the specific type + color, add it to tetrisBoard
-  void SpawnTetromino(TetrisTypeEnum type, TetrisColorEnum color,
-                      std::pair<int, int> defaultLocation = {23, 5});
+  void SpawnTetromino();
 
   void DrawTetrominoOnBoard();
   void EraseTetrominoOnBoard();
@@ -29,10 +28,13 @@ public:
   void MoveTetrominoLeft();
   void MoveTetrominoRight();
 
+  // Lock is also responsible to generate the next tetromino + end game logic
+  // We should also check if we can remove lines here
   void LockCurrentTetromino();
 
 private:
   std::vector<std::vector<std::pair<bool, TetrisColorEnum>>> board;
   int currentLevel;
   std::unique_ptr<Tetromino> currentTetromino = nullptr;
+  std::unique_ptr<Tetromino> nextTetromino = nullptr;
 };

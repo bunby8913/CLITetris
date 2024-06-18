@@ -100,3 +100,37 @@ void Tetromino::RotatePatternLeft() {
   tetrisRotationIndex = (tetrisRotationIndex + 1) % 4;
   tetrisRotation = static_cast<TetrisRotationEnum>(tetrisRotationIndex);
 }
+
+TetrisTypeEnum Tetromino::GetNextType() {
+  return static_cast<TetrisTypeEnum>(rand() % (TetrisTypeEnum::Z + 1));
+}
+
+TetrisColorEnum Tetromino::GetColorBaseOnType(TetrisTypeEnum tetrisType) {
+  TetrisColorEnum color;
+  switch (tetrisType) {
+  case I:
+    color = TetrisColorEnum::Cyan;
+    break;
+  case J:
+    color = TetrisColorEnum::Blue;
+    break;
+  case L:
+    color = TetrisColorEnum::Orange;
+    break;
+  case O:
+    color = TetrisColorEnum::Yellow;
+    break;
+  case S:
+    color = TetrisColorEnum::Green;
+    break;
+  case T:
+    color = TetrisColorEnum::Purple;
+    break;
+  case Z:
+    color = TetrisColorEnum::Red;
+    break;
+  default:
+    color = TetrisColorEnum::Reset;
+  }
+  return color;
+}

@@ -33,6 +33,9 @@ public:
   int GetRightEdge() const { return rightMatrixEdge; };
   int GetTopEdge() const { return topMatrixEdge; };
 
+  static TetrisTypeEnum GetNextType();
+  static TetrisColorEnum GetColorBaseOnType(TetrisTypeEnum TetrisType);
+
 private:
   // Store the location of the tetris
   // This should always be the location of the top-left corner of the matrix
