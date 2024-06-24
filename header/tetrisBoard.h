@@ -18,6 +18,9 @@ public:
   // Boards are updated by moving the current Tetromino down by 1 block
   void UpdateBoard();
 
+  void DropTetromino();
+
+  void HoldTetromino();
   // Create a tetromino of the specific type + color, add it to tetrisBoard
   void SpawnTetromino();
 
@@ -32,9 +35,7 @@ public:
   // We should also check if we can remove lines here
   void LockCurrentTetromino();
 
-  int CheckForCompletedLines();
-
-  void RemoveCompletedLines(int lines);
+  void CheckAndRemoveCompletedLines();
 
 private:
   std::vector<std::vector<std::pair<bool, TetrisColorEnum>>> board;

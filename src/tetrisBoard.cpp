@@ -50,16 +50,18 @@ void TetrisBoard::UpdateBoard() {
         currentTetromino->GetTetrisMatrix();
     for (int i = 0; i < currentMatrix[0].size(); ++i) {
       // if that bottom grid is occupied
-      if (currentMatrix[3][i]) {
-        // if there are blocks underneath that are true, lock to current
-        // position
-        int row =
-            std::min(static_cast<int>(board.size()), matrixLocation.first + 4);
-        int column = std::min(static_cast<int>(board[0].size()),
-                              matrixLocation.second + i);
-        if (board[row][column].first == true) {
-          LockCurrentTetromino();
-          return;
+      for (int j = currentMatrix.size() - 1; j >= 0; --j) {
+        if (currentMatrix[j][i]) {
+
+          int row = std::min(static_cast<int>(board.size()),
+                             matrixLocation.first + (j + 1));
+          int column = std::min(static_cast<int>(board[0].size()),
+                                matrixLocation.second + i);
+          if (board[row][column].first) {
+            LockCurrentTetromino();
+            return;
+          }
+          break;
         }
       }
     }
@@ -73,6 +75,47 @@ void TetrisBoard::UpdateBoard() {
     }
   }
 }
+void TetrisBoard::DropTetromino() {
+  if (currentTetromino) {
+    // Get the current tetromino location + shape
+    std::pair<int, int> matrixLocation = currentTetromino->GetTetrisLocation();
+    std::vector<std::vector<bool>> currentMatrix =
+        currentTetromino->GetTetrisMatrix();
+    // Used to stop loop conditions
+    bool canMoveDown = true;
+    // Used to store how many rows the tetromino should move down
+    int dropDownRows = 0;
+    while (canMoveDown) {
+      for (int i = 0; i < currentMatrix[0].size(); ++i) {
+        for (int j = currentMatrix.size() - 1; j >= 0; --j) {
+          if (currentMatrix[j][i]) {
+            int row = matrixLocation.first + j + 1 + dropDownRows;
+            int column = std::min(static_cast<int>(board[0].size()),
+                                  matrixLocation.second + i);
+            if (board[row][column].first) {
+              // The drop should end here
+              canMoveDown = false;
+            }
+            break;
+          }
+        }
+      }
+      if (canMoveDown) {
+        ++dropDownRows;
+      }
+    }
+    if (matrixLocation.first + 4 < (ROW_SIZE - 1)) {
+      EraseTetrominoOnBoard();
+      matrixLocation.first += dropDownRows;
+      currentTetromino->SetTetrisLocation(matrixLocation);
+      DrawTetrominoOnBoard();
+    } else {
+      LockCurrentTetromino();
+    }
+  }
+}
+
+void TetrisBoard::HoldTetromino() {}
 
 void TetrisBoard::SpawnTetromino() {
   std::pair<int, int> spawnLocation = {18, 5};
@@ -148,14 +191,18 @@ void TetrisBoard::ProcessPlayerInput(int characterAscii) {
     EraseTetrominoOnBoard();
     currentTetromino->RotatePatternLeft();
     DrawTetrominoOnBoard();
-    // c to rotate right
-  } else if (characterAscii == 99) {
+  }
+  // 99 to rotate right
+  else if (characterAscii == 99) {
     EraseTetrominoOnBoard();
     currentTetromino->RotatePatternRight();
     DrawTetrominoOnBoard();
-
   }
-  // 99 is c
+  // 32 (space) to drop the block
+  else if (characterAscii == 32) {
+    DropTetromino();
+  }
+
   else {
     // std::cout << characterAscii << std::endl;
   }
@@ -216,43 +263,25 @@ void TetrisBoard::MoveTetrominoRight() {
     }
   }
 }
-
-int TetrisBoard::CheckForCompletedLines() {
-  int completedLine = 0;
+// TODO: Fix the line completation detection bug
+void TetrisBoard::CheckAndRemoveCompletedLines() {
+  int linesAboveToCopy = 0;
   for (int i = ROW_SIZE - 2; i > DRAW_LIMIT; --i) {
+    bool completedRow = true;
     for (int j = 0; j < board[0].size(); ++j) {
       if (!board[i][j].first) {
-        return completedLine;
+        completedRow = false;
       }
     }
-    ++completedLine;
-  }
-  return completedLine;
-}
-
-void TetrisBoard::RemoveCompletedLines(int lines) {
-  // Start from the bottom of the board and move upwards
-  for (int i = ROW_SIZE - 2; i >= lines; --i) {
-    for (int j = 0; j < board[0].size(); ++j) {
-      // Move the line `lines` rows up
-      board[i][j] = board[i - lines][j];
+    if (completedRow) {
+      ++linesAboveToCopy;
     }
-  }
-
-  // Clear the top `lines` rows
-  for (int i = lines - 1; i >= 0; --i) {
-    for (int j = 0; j < board[0].size(); ++j) {
-      board[i][j].first = false;
-      board[i][j].second = TetrisColorEnum::Reset;
-    }
+    auto replacementRow = board[i - linesAboveToCopy];
+    board[i] = replacementRow;
   }
 }
-
 void TetrisBoard::LockCurrentTetromino() {
   currentTetromino = nullptr;
-  int linesToErase = CheckForCompletedLines();
-  if (linesToErase > 0) {
-    RemoveCompletedLines(linesToErase);
-  }
+  CheckAndRemoveCompletedLines();
   SpawnTetromino();
 }

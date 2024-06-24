@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
+  // The InitializationHelper helps to setup + reset the CLI to display the game
+  // board
   std::unique_ptr<InitializationHelper> InitHelper =
       std::make_unique<InitializationHelper>();
   std::unique_ptr<TetrisBoard> tetrisBoard = std::make_unique<TetrisBoard>();
@@ -31,7 +33,6 @@ int main(int argc, char *argv[]) {
       } else {
         characterAscii = character;
         tetrisBoard->ProcessPlayerInput(characterAscii);
-        // 68 is left, 67 is right
       }
     }
     auto currentTime = std::chrono::steady_clock::now();
@@ -45,10 +46,11 @@ int main(int argc, char *argv[]) {
       InitHelper->ClearScreen();
       tetrisBoard->drawBoard();
     }
+    // Sleep for 1 milliseconds before processing the next frame
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   InitHelper->ResetScreen();
-  // Show cursor
+  //  Bring back cursor
   std::cout << "\x1b[?25h";
   return 0;
 }
