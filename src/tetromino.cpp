@@ -89,7 +89,7 @@ void Tetromino::GeneratePattern(TetrisTypeEnum type) {
    }
    */
 }
-
+// TODO: Fix rotation could make tetromino go out of bounds
 void Tetromino::RotatePatternRight() {
   tetrisRotationIndex = (tetrisRotationIndex + 1) % 4;
   tetrisRotation = static_cast<TetrisRotationEnum>(tetrisRotationIndex);
@@ -104,6 +104,17 @@ void Tetromino::RotatePatternRight() {
   LeftAlignPattern(tempPattern);
   BottomAlignPattern(tempPattern);
   tetrisPattern = tempPattern;
+  bool doOnce = true;
+  for (int i = 0; i < tetrisPattern.size(); ++i) {
+    for (int j = 0; j < tetrisPattern[0].size(); ++j) {
+      if (tetrisPattern[i][j] && doOnce) {
+        if (tetrisLocation.second + i > 10) {
+          doOnce = false;
+          tetrisLocation.second--;
+        }
+      }
+    }
+  }
 }
 
 void Tetromino::RotatePatternLeft() {
@@ -121,6 +132,16 @@ void Tetromino::RotatePatternLeft() {
   LeftAlignPattern(tempPattern);
   BottomAlignPattern(tempPattern);
   tetrisPattern = tempPattern;
+  bool doOnce = true;
+  for (int i = 0; i < tetrisPattern.size(); ++i) {
+    for (int j = 0; j < tetrisPattern[0].size(); ++j) {
+      if (tetrisPattern[i][j]) {
+        if (tetrisLocation.second + i > 11) {
+          tetrisLocation.second--;
+        }
+      }
+    }
+  }
 }
 
 void Tetromino::LeftAlignPattern(std::vector<std::vector<bool>> &pattern) {
@@ -181,7 +202,6 @@ TetrisTypeEnum Tetromino::GetNextType() {
   std::default_random_engine generator(std::random_device{}());
   std::uniform_int_distribution<int> distribution(0, TetrisTypeEnum::Z);
   int random = distribution(generator);
-  std::cout << random << std::endl;
 
   return static_cast<TetrisTypeEnum>(random);
 }

@@ -22,7 +22,7 @@ public:
 
   void HoldTetromino();
   // Create a tetromino of the specific type + color, add it to tetrisBoard
-  void SpawnTetromino();
+  void SpawnTetromino(bool spawnFromHolding = false);
 
   void DrawTetrominoOnBoard();
   void EraseTetrominoOnBoard();
@@ -43,4 +43,7 @@ private:
   std::unique_ptr<Tetromino> currentTetromino = nullptr;
   std::unique_ptr<Tetromino> nextTetromino = nullptr;
   std::unique_ptr<Tetromino> holdTetromino = nullptr;
+  bool canHold = true;
+  std::pair<int, int> spawnLocation = {18, 5};
+  int score = 0;
 };

@@ -37,9 +37,43 @@ void TetrisBoard::drawBoard() {
         std::cout << "  ";
       }
     }
+    if (i == DRAW_LIMIT) {
+      std::cout << "  NEXT";
+      // draw Next Tetromino
+    } else if (i < DRAW_LIMIT + 5) {
+      if (nextTetromino != nullptr) {
+        std::vector<std::vector<bool>> next = nextTetromino->GetTetrisMatrix();
+        TetrisColorEnum color = nextTetromino->GetTetrisColor();
+        std::cout << "  ";
+        for (int j = 0; j < next[0].size(); ++j) {
+          if (next[i - (DRAW_LIMIT + 1)][j]) {
+            std::cout << GetColorString(color) + "\u2588\u2588";
+          } else {
+            std::cout << "  ";
+          }
+        }
+      }
+    } else if (i == DRAW_LIMIT + 5) {
+      std::cout << "  HOLD";
+    } else if (i < DRAW_LIMIT + 10) {
+      if (holdTetromino != nullptr) {
+        auto next = holdTetromino->GetTetrisMatrix();
+        TetrisColorEnum color = holdTetromino->GetTetrisColor();
+        std::cout << "  ";
+        for (int j = 0; j < next[0].size(); ++j) {
+          if (next[i - (DRAW_LIMIT + 6)][j]) {
+            std::cout << GetColorString(color) + "\u2588\u2588";
+          } else {
+            std::cout << "  ";
+          }
+        }
+      }
+    }
     std::cout << std::endl;
   }
   std::cout << GetColorString(TetrisColorEnum::Reset);
+  std::cout << "Score:" << score << std::endl;
+  std::cout << "lvl:" << std::endl;
 }
 
 void TetrisBoard::UpdateBoard() {
@@ -89,7 +123,8 @@ void TetrisBoard::DropTetromino() {
       for (int i = 0; i < currentMatrix[0].size(); ++i) {
         for (int j = currentMatrix.size() - 1; j >= 0; --j) {
           if (currentMatrix[j][i]) {
-            int row = matrixLocation.first + j + 1 + dropDownRows;
+            int row = std::min(static_cast<int>(board.size()),
+                               matrixLocation.first + j + 1 + dropDownRows);
             int column = std::min(static_cast<int>(board[0].size()),
                                   matrixLocation.second + i);
             if (board[row][column].first) {
@@ -115,23 +150,33 @@ void TetrisBoard::DropTetromino() {
   }
 }
 
-void TetrisBoard::HoldTetromino() {}
+void TetrisBoard::HoldTetromino() {
+  if (canHold) {
+    EraseTetrominoOnBoard();
+    if (holdTetromino) {
+      nextTetromino = std::move(holdTetromino);
+    }
+    holdTetromino = std::move(currentTetromino);
+    SpawnTetromino(true);
+    canHold = false;
+  }
+}
 
-void TetrisBoard::SpawnTetromino() {
-  std::pair<int, int> spawnLocation = {18, 5};
-
+void TetrisBoard::SpawnTetromino(bool spawnFromHolding) {
   // When the game first starts
-  if (!currentTetromino) {
+  if (spawnFromHolding) {
+    nextTetromino->SetTetrisLocation(spawnLocation);
+    currentTetromino = std::move(nextTetromino);
+  } else if (nextTetromino) {
+    currentTetromino = std::move(nextTetromino);
+    currentTetromino->SetTetrisLocation(spawnLocation);
+    DrawTetrominoOnBoard();
+  } else {
     TetrisTypeEnum currentType = Tetromino::GetNextType();
     TetrisColorEnum currentColor = Tetromino::GetColorBaseOnType(currentType);
     currentTetromino = std::make_unique<Tetromino>(currentType, currentColor);
     currentTetromino->SetTetrisLocation(spawnLocation);
     DrawTetrominoOnBoard();
-    // Else, use the next tetromino
-  } else {
-    if (nextTetromino) {
-      currentTetromino = std::move(nextTetromino);
-    }
   }
   // Create the next Tetromino, so the player can know what's coming next
   TetrisTypeEnum nextType = Tetromino::GetNextType();
@@ -141,7 +186,6 @@ void TetrisBoard::SpawnTetromino() {
 
 void TetrisBoard::DrawTetrominoOnBoard() {
   if (currentTetromino) {
-
     std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
     std::vector<std::vector<bool>> tetrominoMatrix =
         currentTetromino->GetTetrisMatrix();
@@ -160,7 +204,6 @@ void TetrisBoard::DrawTetrominoOnBoard() {
 
 void TetrisBoard::EraseTetrominoOnBoard() {
   if (currentTetromino) {
-
     std::pair<int, int> currentLocation = currentTetromino->GetTetrisLocation();
     std::vector<std::vector<bool>> tetrominoMatrix =
         currentTetromino->GetTetrisMatrix();
@@ -186,17 +229,65 @@ void TetrisBoard::ProcessPlayerInput(int characterAscii) {
   else if (characterAscii == 67) {
     MoveTetrominoRight();
   }
-  // 122 to rotate left
+  // Down input
+  else if (characterAscii == 66) {
+  }
+  // Z to rotate left
   else if (characterAscii == 122) {
     EraseTetrominoOnBoard();
-    currentTetromino->RotatePatternLeft();
+    if (currentTetromino) {
+      currentTetromino->RotatePatternLeft();
+      auto currentPattern = currentTetromino->GetTetrisMatrix();
+      auto currentLocation = currentTetromino->GetTetrisLocation();
+      bool badRotation = false;
+      for (int i = 0; i < currentPattern.size(); ++i) {
+        for (int j = 0; j < currentPattern[0].size(); ++j) {
+          if (currentPattern[i][j]) {
+            // If the block is already occupied, revert the rotation
+            if (board[currentLocation.first + i][currentLocation.second + j]
+                    .first) {
+              badRotation = true;
+              break;
+            }
+          }
+        }
+      }
+      if (badRotation) {
+        currentTetromino->RotatePatternRight();
+      }
+    }
+    // Check if there will be any collision, if so, revert rotation back
+    DrawTetrominoOnBoard();
+    // Up arrow of X to rotate right
+  } else if (characterAscii == 120 || characterAscii == 65) {
+    EraseTetrominoOnBoard();
+    if (currentTetromino) {
+      currentTetromino->RotatePatternRight();
+      auto currentPattern = currentTetromino->GetTetrisMatrix();
+      auto currentLocation = currentTetromino->GetTetrisLocation();
+      bool badRotation = false;
+      for (int i = 0; i < currentPattern.size(); ++i) {
+        for (int j = 0; j < currentPattern[0].size(); ++j) {
+          if (currentPattern[i][j]) {
+            // If the block is already occupied, revert the rotation
+            if (board[currentLocation.first + i][currentLocation.second + j]
+                    .first) {
+              badRotation = true;
+              break;
+            }
+          }
+        }
+      }
+      if (badRotation) {
+        currentTetromino->RotatePatternLeft();
+      }
+    }
+
     DrawTetrominoOnBoard();
   }
-  // 99 to rotate right
+  // 99 to hold
   else if (characterAscii == 99) {
-    EraseTetrominoOnBoard();
-    currentTetromino->RotatePatternRight();
-    DrawTetrominoOnBoard();
+    HoldTetromino();
   }
   // 32 (space) to drop the block
   else if (characterAscii == 32) {
@@ -263,25 +354,47 @@ void TetrisBoard::MoveTetrominoRight() {
     }
   }
 }
-// TODO: Fix the line completation detection bug
+
 void TetrisBoard::CheckAndRemoveCompletedLines() {
-  int linesAboveToCopy = 0;
+  int removedLines = 0;
   for (int i = ROW_SIZE - 2; i > DRAW_LIMIT; --i) {
     bool completedRow = true;
     for (int j = 0; j < board[0].size(); ++j) {
       if (!board[i][j].first) {
         completedRow = false;
+        break;
       }
     }
     if (completedRow) {
-      ++linesAboveToCopy;
+      for (int j = i; j > DRAW_LIMIT; --j) {
+        board[j] = board[j - 1];
+      }
+      ++i;
+      ++removedLines;
     }
-    auto replacementRow = board[i - linesAboveToCopy];
-    board[i] = replacementRow;
+  }
+  switch (removedLines) {
+  case 1:
+    score += 100;
+    break;
+  case 2:
+    score += 300;
+    break;
+  case 3:
+    score += 500;
+    break;
+  case 4:
+    break;
+    score += 800;
+    break;
+  default:
+    score += 0;
   }
 }
+
 void TetrisBoard::LockCurrentTetromino() {
   currentTetromino = nullptr;
   CheckAndRemoveCompletedLines();
   SpawnTetromino();
+  canHold = true;
 }
