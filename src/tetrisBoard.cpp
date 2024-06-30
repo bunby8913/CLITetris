@@ -23,6 +23,9 @@ void TetrisBoard::InitializeBoarder() {
     board[i][0].first = true;
     board[i][board[0].size() - 1].first = true;
   }
+  // Generate the next 14 tetromino order before the game start
+  mainBag = GenerateTetrominoBag();
+  reserveBag = GenerateTetrominoBag();
 }
 
 void TetrisBoard::drawBoard() {
@@ -72,8 +75,8 @@ void TetrisBoard::drawBoard() {
     std::cout << std::endl;
   }
   std::cout << GetColorString(TetrisColorEnum::Reset);
-  std::cout << "Score:" << score << std::endl;
-  std::cout << "lvl:" << std::endl;
+  std::cout << "Score: " << score << std::endl;
+  std::cout << "lvl: " << level << std::endl;
 }
 
 void TetrisBoard::UpdateBoard() {
@@ -98,6 +101,10 @@ void TetrisBoard::UpdateBoard() {
           break;
         }
       }
+    }
+    // Update score if the board update is resulted by soft dropping
+    if (isSoftDropping) {
+      score += 1;
     }
     if (matrixLocation.first + 4 < (ROW_SIZE - 1)) {
       EraseTetrominoOnBoard();
@@ -142,11 +149,14 @@ void TetrisBoard::DropTetromino() {
     if (matrixLocation.first + 4 < (ROW_SIZE - 1)) {
       EraseTetrominoOnBoard();
       matrixLocation.first += dropDownRows;
+      // Use the hardDropLineCounter for score calculation
+      hardDropLineCounter = dropDownRows;
       currentTetromino->SetTetrisLocation(matrixLocation);
       DrawTetrominoOnBoard();
     } else {
       LockCurrentTetromino();
     }
+    UpdateBoard();
   }
 }
 
@@ -165,23 +175,31 @@ void TetrisBoard::HoldTetromino() {
 void TetrisBoard::SpawnTetromino(bool spawnFromHolding) {
   // When the game first starts
   if (spawnFromHolding) {
-    nextTetromino->SetTetrisLocation(spawnLocation);
     currentTetromino = std::move(nextTetromino);
-  } else if (nextTetromino) {
-    currentTetromino = std::move(nextTetromino);
-    currentTetromino->SetTetrisLocation(spawnLocation);
-    DrawTetrominoOnBoard();
   } else {
-    TetrisTypeEnum currentType = Tetromino::GetNextType();
-    TetrisColorEnum currentColor = Tetromino::GetColorBaseOnType(currentType);
-    currentTetromino = std::make_unique<Tetromino>(currentType, currentColor);
-    currentTetromino->SetTetrisLocation(spawnLocation);
-    DrawTetrominoOnBoard();
+    if (nextTetromino)
+      currentTetromino = std::move(nextTetromino);
+    else
+      currentTetromino = std::move(mainBag[0]);
   }
-  // Create the next Tetromino, so the player can know what's coming next
-  TetrisTypeEnum nextType = Tetromino::GetNextType();
-  TetrisColorEnum nextColor = Tetromino::GetColorBaseOnType(nextType);
-  nextTetromino = std::make_unique<Tetromino>(nextType, nextColor);
+  currentTetromino->SetTetrisLocation(spawnLocation);
+  CheckIfGameShouldEnd();
+  DrawTetrominoOnBoard();
+
+  // If we have gone through the main bag
+  if (bagCounter == mainBag.size() - 1) {
+    for (int i = 0; i < mainBag.size(); ++i) {
+      mainBag[i] = std::move(reserveBag[i]);
+    }
+    reserveBag = GenerateTetrominoBag();
+  }
+  if (bagCounter < mainBag.size() - 1) {
+    nextTetromino = std::move(mainBag[bagCounter + 1]);
+  } else {
+    nextTetromino = std::move(mainBag[0]);
+  }
+  ++bagCounter;
+  bagCounter %= mainBag.size();
 }
 
 void TetrisBoard::DrawTetrominoOnBoard() {
@@ -200,6 +218,22 @@ void TetrisBoard::DrawTetrominoOnBoard() {
       }
     }
   }
+}
+
+std::vector<std::unique_ptr<Tetromino>> TetrisBoard::GenerateTetrominoBag() {
+  std::vector<TetrisTypeEnum> typeBag;
+  while (typeBag.size() < 7) {
+    TetrisTypeEnum tempType = Tetromino::GetNextType();
+    if (std::find(typeBag.begin(), typeBag.end(), tempType) == typeBag.end()) {
+      typeBag.push_back(tempType);
+    }
+  }
+  std::vector<std::unique_ptr<Tetromino>> tetrominoBag;
+  for (const auto &type : typeBag) {
+    tetrominoBag.push_back(
+        std::make_unique<Tetromino>(type, Tetromino::GetColorBaseOnType(type)));
+  }
+  return tetrominoBag;
 }
 
 void TetrisBoard::EraseTetrominoOnBoard() {
@@ -231,6 +265,7 @@ void TetrisBoard::ProcessPlayerInput(int characterAscii) {
   }
   // Down input
   else if (characterAscii == 66) {
+    isSoftDropping = true;
   }
   // Z to rotate left
   else if (characterAscii == 122) {
@@ -373,23 +408,39 @@ void TetrisBoard::CheckAndRemoveCompletedLines() {
       ++removedLines;
     }
   }
+  int tempScore = 0;
   switch (removedLines) {
   case 1:
-    score += 100;
+    tempScore = (100 * level);
     break;
   case 2:
-    score += 300;
+    tempScore = (300 * level);
     break;
   case 3:
-    score += 500;
+    tempScore = (500 * level);
     break;
   case 4:
     break;
-    score += 800;
+    tempScore = (800 * level);
     break;
   default:
-    score += 0;
+    tempScore += 0;
   }
+  // Special case of back to back tetris
+  if (lastLinesCleared == 4 && removedLines == 4) {
+    tempScore = 1200 * level;
+  }
+  std::cout << tempScore << std::endl;
+  lastLinesCleared = removedLines;
+  tempScore += hardDropLineCounter * 2;
+  //  Reset hard drop line counter to 0
+  hardDropLineCounter = 0;
+  // Update the current score and level
+  score += tempScore;
+  totalClearedLineCounter += removedLines;
+  // Use fix goal, level up every 10 lines gets cleared
+  level += totalClearedLineCounter / 10;
+  totalClearedLineCounter %= 10;
 }
 
 void TetrisBoard::LockCurrentTetromino() {
@@ -397,4 +448,37 @@ void TetrisBoard::LockCurrentTetromino() {
   CheckAndRemoveCompletedLines();
   SpawnTetromino();
   canHold = true;
+}
+
+void TetrisBoard::CheckIfGameShouldEnd() {
+  // Determine if there are any collisions when spawning new Tetromion, if so,
+  // end the game
+  if (currentTetromino) {
+    auto tetrominoPattern = currentTetromino->GetTetrisMatrix();
+    for (int i = 0; i < tetrominoPattern.size(); ++i) {
+      for (int j = 0; j < tetrominoPattern[0].size(); ++j) {
+        if (tetrominoPattern[i][j]) {
+          int row = spawnLocation.first + i;
+          int column = spawnLocation.second + j;
+          if (board[row][column].first) {
+            // end game
+            endGame = true;
+          }
+        }
+      }
+    }
+  }
+}
+
+void TetrisBoard::ResetBoard() {
+  std::cout << "reset board called" << std::endl;
+  for (int i = 0; i < board.size(); ++i) {
+    for (int j = 0; j < board[0].size(); ++j) {
+      board[i][j].first = false;
+      board[i][j].second = TetrisColorEnum::Reset;
+    }
+  }
+  score = 0;
+  level = 1;
+  InitializeBoarder();
 }
